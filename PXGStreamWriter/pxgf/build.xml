@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+Copyright 2004 The Ant-Contrib project
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+<project name="pxgf" default="all">
+
+<property name="base.dir" value="."/>
+<property name="debug" value="true"/>
+<property name="compiler" value="msvc"/>
+<property name="src.dir" location="${base.dir}/src/main"/>
+<property name="examples.dir" location="${base.dir}/src/test"/>
+<property name="build.dir" location="${base.dir}/build"/>
+<property name="include.dir" location="${base.dir}/src/main"/>
+<property name="config.dir" location="${base.dir}/config"/>
+<property name="major" value="1"/>
+<property name="minor" value="9"/>
+<property name="build" value="14"/>
+<!-- specify api="unix" or api="win32" override platform default -->
+<property name="api" value="default"/>
+
+<taskdef resource="cpptasks.tasks"/>
+<typedef resource="cpptasks.types"/>
+
+<target name="usage">
+	<echo message="Builds pxgf."/>
+	<echo message="Usage:"/>
+	<echo message="ant -f cppunit.ant -Dbase.dir=c:/cppunit-1.9.14"/>
+	<echo message="    -Dcompiler=[gcc | msvc | icc | bcc ...]"/>
+	<echo message="Status:"/>
+</target>
+
+<target name="check-config" depends="init">
+	<available property="configure-available" 
+	           file="${base.dir}/configure"/>
+	<available property="config-auto-available" 
+	           file="${include.dir}/cppunit/config-auto.h"/>
+	<condition property="do-autogen">
+			<not>
+				<or>
+					<isset property="configure-available"/>
+					<isset property="is-windows"/>
+				</or>
+			</not>
+	</condition>
+	<condition property="do-configure">
+			<not>
+				<or>
+					<isset property="config-auto-available"/>
+					<isset property="is-windows"/>
+				</or>
+			</not>
+	</condition>
+</target>
+
+<target name="run-autogen" 
+        depends="check-config" 
+	    if="do-autogen">
+	<exec dir="${base.dir}" executable="bash">
+		<arg value="autogen.sh"/>
+	</exec>
+</target>
+
+
+<target name="run-configure" 
+        depends="run-autogen" 
+        if="do-configure">
+	<exec dir="${base.dir}" executable="bash">
+		<arg value="configure"/>
+	</exec>
+</target>
+
+<target name="init">
+	<mkdir dir="${build.dir}"/>
+	<property name="obj.dir" value="${build.dir}/obj"/>
+	<mkdir dir="${obj.dir}"/>
+	<condition property="is-gcc">
+		<or>
+			<equals arg1="${compiler}" arg2="gcc"/>
+			<equals arg1="${compiler}" arg2="g++"/>
+		</or>
+	</condition>
+	<condition property="is-msvc">
+		<or>
+			<equals arg1="${compiler}" arg2="msvc"/>
+		</or>
+	</condition>
+	<condition property="is-windows"><os family="windows"/></condition>
+	<condition property="is-win32">
+		<or>
+			<equals arg1="${api}" arg2="win32"/>
+			<and>
+				<equals arg1="${api}" arg2="default"/>
+				<isset property="is-windows"/>
+			</and>
+		</or>
+	</condition>
+	<property environment="env"/>
+	<!--  in case not set in environment, use an insignificant value -->
+	<property name="env.LD_LIBRARY_PATH" value="."/>
+</target>
+
+<target name="clean">
+	<delete dir="${build.dir}"/>
+</target>
+
+<target name="static-lib" depends="run-configure">
+	<mkdir dir="${obj.dir}/pxgf_static"/>
+	<cc subsystem="console" 
+		outfile="${build.dir}/pxgf"
+		objdir="${obj.dir}/pxgf_static" 
+		outtype="static" 
+		debug="${debug}"
+	    exceptions="true"
+	    rtti="true"
+	    optimize="speed"
+		name="${compiler}">
+		<fileset dir="${src.dir}"
+		   includes="com/peralex/framework/**/*.cpp"/>
+		<includepath path="${include.dir}"/>
+		<defineset define="WIN32" if="is-win32"/>
+		<libset libs="stdc++" if="is-gcc"/>
+		<versioninfo refid="pxgf-version"/>
+	</cc>
+</target>
+
+<target name="compile-static-test" depends="static-lib">
+	<mkdir dir="${obj.dir}/pxgftestmain_static"/>
+	<cc outfile="${build.dir}/pxgf_test1" 
+	    outtype="executable" 
+	    subsystem="console" 
+	    objdir="${obj.dir}/pxgftestmain_static" 
+	    debug="${debug}"
+	    exceptions="true"
+	    rtti="true"
+	    optimize="speed"
+	    name="${compiler}"
+	    outputfileproperty="test.exe">
+		<fileset dir="${examples.dir}"
+		   includes="*.cpp"/>
+		<includepath path="${include.dir}"/>
+		<libset dir="${build.dir}" libs="pxgf"/>
+		<defineset define="WIN32" if="is-win32"/>
+		<libset libs="stdc++" if="is-gcc"/>
+		<versioninfo refid="pxgf-version"/>
+	</cc>
+</target>
+
+<target name="test-static" depends="compile-static-test">
+	<!-- return value (or Ant's treatment of it) is 
+	           inconsistent on Linux   -->
+	<exec dir="${build.dir}" 
+	      executable="${build.dir}/cppunittestmain"
+	      failonerror="true"/> 
+</target>
+
+
+<target name="all" depends="static-lib,compile-static-test"/>
+
+<target name="test-all" depends="test-static"/>
+			    
+</project>

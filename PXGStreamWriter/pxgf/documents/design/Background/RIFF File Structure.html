@@ -1,0 +1,168 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!-- saved from url=(0072)http://www.udayton.edu/~cps/faculty/jloomis/cps592B/asgn/asgn1/riff.html -->
+<HTML><HEAD><TITLE>RIFF File Structure</TITLE>
+<META http-equiv=Content-Type content="text/html; charset=windows-1252">
+<META content="MSHTML 6.00.2900.2523" name=GENERATOR></HEAD>
+<BODY>
+<H1>RIFF File Structure</H1>
+<P>The Resource Interchange File Format (RIFF) is a tagged-file specification 
+designed for the storage of multimedia data. Data types ranging from C++ objects 
+to full-motion video can be stored based on the RIFF specification, and new data 
+types can be added. 
+<P>The zip file <A 
+href="http://www.udayton.edu/~cps/faculty/jloomis/cps592B/asgn/asgn1/riff.zip">riff.zip</A> 
+contains several examples of RIFF files, a Microsoft-provided executable program 
+for displaying RIFF file structures, and a simple C++ program that also displays 
+RIFF file chunks. 
+<P>Table 1 shows several file formats based on the RIFF specification. 
+<CENTER>
+<H3>Table 1: Form types.</H3>
+<P>
+<TABLE border=1>
+  <TBODY>
+  <TR>
+    <TH>Form
+    <TH>Description</TR> 
+  <TR>
+    <TD>CPPO 
+    <TD>APPS Software International C++ Object Format </TD>
+  <TR>
+    <TD>PAL 
+    <TD>Palette File Format </TD>
+  <TR>
+    <TD>RDIB 
+    <TD>Device Independent Bitmap Format </TD>
+  <TR>
+    <TD>RMID 
+    <TD>MIDI Audio Format </TD>
+  <TR>
+    <TD>RMMP 
+    <TD>Multimedia Movie File Format</TD>
+  <TR>
+    <TD>WAVE 
+    <TD>Waveform Audio Format</TD></TR></TBODY></TABLE></CENTER>
+<P>RIFF provides a standard storage method for different types of multimedia 
+data. Applications can ignore types of data in a RIFF file that they can't 
+process, preventing software from becoming obsolete because of the introduction 
+of a new variation of a data type. The specification's only major limitation is 
+that, in its current version, the data area of a RIFF file may not exceed four 
+gigabytes. Given the current state of the art of most PCs, this limitation isn't 
+serious, but it may become so in a future that promises giant files such as 
+those of full-length digital HDTV movies. Already, four gigabytes will only hold 
+a few hours of uncompressed CD-quality audio. 
+<H2>RIFF Internals </H2>
+<P>The basis of the RIFF specification is a data structure known as the "chunk," 
+which contains a unique chunk-type identifier, an integer value that holds the 
+size of the chunk's data area and the data itself. 
+<P>The following C data structures describes the organization of a chunk. <PRE>typedef unsigned long DWORD; 
+typedef unsigned char BYTE; 
+typedef DWORD FOURCC;    // Four-character code 
+typedef struct { 
+     FOURCC ckID;        // The unique chunk identifier 
+     DWORD ckSize;       // The size of field &lt;ckData&gt; 
+     BYTE ckData[ckSize];     // The actual data of the chunk 
+} CK; 
+</PRE>
+<P align=center><IMG src="RIFF File Structure_files/riff1.gif"> 
+<P>RIFF and LIST chunks have an extra field at the beginning of their data area. 
+<PRE> 
+typedef struct { 
+     FOURCC ckID; 
+     DWORD ckSize; 
+     union { 
+          FOURCC fccType;          // RIFF form type 
+          BYTE ckData[ckSize]; 
+     } ckData; 
+} RIFFCK;
+</PRE>
+<P align=center><IMG src="RIFF File Structure_files/riff2.gif"> 
+<P>These examples assume that there is no padding between fields in either 
+structure. Therefore, chunk data in a non-RIFF or LIST chunk starts at an offset 
+of 8 bytes into the chunk (12 bytes in the case of RIFF or LIST chunks). Chunks 
+are padded at the end to WORD (16-bit) boundaries, however. 
+<P>Chunks contain data such as ASCII text, waveform data, or bitmaps; certain 
+chunks (currently only RIFF or LIST chunks) may contain nested subchunks. The 
+data-area size includes the size of these subchunks (if any). By splitting a 
+file into several variable-length chunks, RIFF allows for greater flexibility 
+than file formats defined around fixed-length and position fields. 
+<P>The first chunk in a RIFF file must be a RIFF chunk with a chunk ID 
+consisting of the four-character code RIFF. The first chunk may alternatively be 
+a RIFX chunk--the X indicates that all integers in the file are in Motorola 
+format. In the present version of the RIFF specification, only one RIFF or RIFX 
+chunk is allowed per file. 
+<P>The RIFF chunk contains at least one other chunk, with the number of chunks 
+varying depending on the form type (file format) of the file and on the number 
+of optional chunks that are present in the file. These chunks are known as 
+"subchunks" of the RIFF chunk. 
+<P>RIFF chunks have a special code at the start of the data area that specifies 
+the form type--the type of data in the file and its format. A RIFF form is also 
+defined by: 
+<P>
+<UL>
+  <P>
+  <LI>A list of mandatory chunks (which must be present to make up a valid file 
+  of the aforementioned form type). 
+  <P></P>
+  <LI>A list of optional chunks, some or all of which may be present. 
+  <P></P>
+  <LI>Optionally, an order in which to store some or all of the chunks. </LI></UL>
+<H2>LIST Chunks</H2>
+<P>LIST chunks are the only chunks apart from RIFF chunks that may contain their 
+own subchunks (although this may change). LIST chunks are usually subchunks of 
+RIFF chunks themselves. Like RIFF chunks, LIST chunks have a four-character code 
+in the first four bytes of their data area. This code specifies the list type 
+(analogous to a RIFF chunk's form type) of the LIST chunk. 
+<P>For example, a LIST chunk of list type INFO may contain subchunks such as 
+INAM (the name of the data stored in the file) and ICRD (creation date). LIST 
+chunks of type INFO are optional in current RIFF forms, but their use is 
+recommended. The LIST chunks' subchunks can store much more information about 
+the file than is available from the filename and date stamp. These LIST 
+subchunks share a common format: Each contains one ASCIIZ (NULL terminated) 
+string. 
+<P>As long as LIST chunks are stored in the correct place (according to the 
+applicable RIFF form), correctly written applications that cannot process LIST 
+chunks will ignore their presence. Table 2 describes the layout of a typical 
+RIFF file containing a LIST chunk. The table shows the layout of a simple WAVE 
+form file as stored on disk. The "fmt" and "data" chunks are subchunks of the 
+RIFF chunk. 
+<CENTER>
+<H3>Table 2: Example RIFF file.</H3>
+<P>
+<TABLE border=1>
+  <TBODY>
+  <TR>
+    <TH>Data type 
+    <TH>Description </TR>
+  <TR>
+    <TD>FOURCC 
+    <TD>Chunk type (for example, "RIFF") </TD>
+  <TR>
+    <TD>DWORD 
+    <TD>Chunk size </TD>
+  <TR>
+    <TD>FOURCC 
+    <TD>Form type (for example, "WAVE") </TD>
+  <TR>
+    <TD>FOURCC 
+    <TD>Chunk type (for example, "fmt") </TD>
+  <TR>
+    <TD>DWORD 
+    <TD>Chunk size </TD>
+  <TR>
+    <TD>BYTE[Chunk size] 
+    <TD>Chunk contents (for example, waveform format)</TD>
+  <TR>
+    <TD>FOURCC 
+    <TD>Chunk type (for example, "data") </TD>
+  <TR>
+    <TD>DWORD 
+    <TD>Chunk size </TD>
+  <TR>
+    <TD>BYTE[Chunk size] 
+    <TD>Chunk contents (for example, waveform data) 
+</TD></TR></TBODY></TABLE></CENTER>
+<P>
+<HR>
+
+<P>Maintained by <A href="mailto:loomis@udri.udayton.edu">John Loomis</A>, last 
+updated <I>5 Jan 2001 </I></P></BODY></HTML>

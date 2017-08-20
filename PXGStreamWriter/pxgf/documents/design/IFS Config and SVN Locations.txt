@@ -1,0 +1,2 @@
+IFS Config V:\Peralex\Common\Other\PXGFFormat\Documents
+SVN svn://iserver.ct/raid/SVN/repos/EWDev/trunk/com/peralex/Framework/pxgf/documents/design/GSY-0D8-SE_IRS-PXGF-Streaming-Format.odt
