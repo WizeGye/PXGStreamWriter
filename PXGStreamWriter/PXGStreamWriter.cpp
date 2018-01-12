@@ -99,21 +99,28 @@ int main(int argc, char *argv[])
 	int MaxChunks = 1565 * 100;
 	FILE* OutputFile;
 	int qwe;
+	time_t  timev;
 
 	cout << "Initialising program" << endl;// << "Please enter address:";
 	//cin >> InputAddress;
 	if (argc != 4)
 	{
-		cout << "There must be three args! argc = " << argc << endl;
+		cout << "There must be three args! argc = " << argc-1 << endl;
+		cout << "PXGStreamWriter.exe ";
+		cout << "[IP Address] ";
+		cout << "[Output file name] ";
+		cout << "[Total number of data chunks to record]" << endl;
 		//cout << "argv[0] = " << argv[0] << endl;
 		return 0;
 	}
+
+//	char timeDate = time(&timev);
 
 	InputAddress = string(argv[1]);
 	FileName = string(argv[2]);
 	sscanf(argv[3], "%d", &MaxChunks);
 
-	cout << "argv[1] = " << InputAddress << ", argv[2] = " << FileName << ", argv[3] = " << MaxChunks << endl;
+//	cout << "argv[1] = " << InputAddress << ", argv[2] = " << FileName << ", argv[3] = " << MaxChunks << endl;
 	OpenSocket(InputAddress);
 
 	cout << "Reading from socket:" << endl;
@@ -129,10 +136,10 @@ int main(int argc, char *argv[])
 	
 	while (datachunks < MaxChunks)//for (count = 0; count < 10000; count++)
 	{
-		if (datachunks % 100 == 0)
+	/*	if (datachunks % 1000 == 0)
 		{
 			cout << "datachunks = " << datachunks << ",    descriptor chunks = " << descriptor << endl;
-		}
+		} */
 		if (synced)
 		{
 			//cout << "Sync acheived!" << endl;
